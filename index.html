@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SethOS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#07090f; --s1:#0d1017; --s2:#131825; --s3:#1a2233;
+  --border:#1f2d45; --border2:#263550;
+  --accent:#3b82f6; --accent2:#f43f5e; --accent3:#10b981;
+  --accent4:#f59e0b; --purple:#8b5cf6;
+  --text:#e2e8f4; --text2:#8fa3c0; --text3:#4a6080;
+  --danger:#ef4444; --warn:#f59e0b;
+  --font:'Outfit',sans-serif; --mono:'DM Mono',monospace;
+  --radius:8px; --shadow:0 4px 24px rgba(0,0,0,0.4);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:14px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+button{cursor:pointer;font-family:var(--font);}
+input,textarea,select{font-family:var(--font);}
+
+/* ── TOPBAR ── */
+.topbar{height:48px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:4px;flex-shrink:0;-webkit-app-region:drag;}
+.logo{font-weight:800;font-size:17px;letter-spacing:-0.5px;margin-right:16px;-webkit-app-region:no-drag;}
+.logo em{color:var(--accent);font-style:normal;}
+.tb-tabs{display:flex;gap:2px;-webkit-app-region:no-drag;}
+.tb-tab{padding:5px 14px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--text2);font-size:12px;font-weight:600;transition:all .15s;-webkit-app-region:no-drag;}
+.tb-tab:hover{color:var(--text);background:var(--s2);}
+.tb-tab.active{color:var(--text);background:var(--s2);border-color:var(--border);}
+.tb-tab.active[data-tab="chat"]{color:var(--accent);}
+.tb-tab.active[data-tab="auto"]{color:var(--accent3);}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px;-webkit-app-region:no-drag;}
+.server-indicator{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);font-family:var(--mono);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--danger);transition:background .3s;}
+.dot.on{background:var(--accent3);box-shadow:0 0 6px var(--accent3);}
+.tb-btn{background:var(--s2);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:11px;transition:all .15s;}
+.tb-btn:hover{color:var(--text);border-color:var(--border2);}
+
+/* ── PAGES ── */
+.page{display:none;flex:1;overflow:hidden;}
+.page.active{display:flex;}
+
+/* ══════════════ CHAT ══════════════ */
+.chat-layout{display:flex;width:100%;height:100%;}
+.chat-sidebar{width:210px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:10px;}
+.sidebar-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;padding:0 2px;}
+.model-select{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;border-radius:6px;padding:6px 8px;margin-bottom:8px;}
+.model-select option{background:var(--s2);}
+.new-chat-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px;font-weight:700;font-size:12px;margin-bottom:12px;transition:opacity .15s;}
+.new-chat-btn:hover{opacity:.85;}
+.chat-hist{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
+.hist-item{padding:6px 8px;border-radius:5px;color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;group:true;}
+.hist-item:hover{background:var(--s2);color:var(--text);}
+.hist-item.active{background:var(--s2);color:var(--accent);}
+.hist-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hist-del{opacity:0;font-size:14px;color:var(--text3);transition:all .15s;flex-shrink:0;background:none;border:none;padding:0 2px;}
+.hist-item:hover .hist-del{opacity:1;}
+.hist-del:hover{color:var(--danger)!important;}
+
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.chat-msgs{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;}
+.chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:8px;}
+.chat-empty .e-icon{font-size:40px;}
+.chat-empty h3{font-size:16px;color:var(--text2);}
+.chat-empty p{font-size:12px;}
+
+.msg{display:flex;gap:10px;animation:fadeUp .18s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.msg.user{flex-direction:row-reverse;}
+.msg-av{width:30px;height:30px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.msg.ai .msg-av{background:linear-gradient(135deg,var(--accent),var(--purple));}
+.msg.user .msg-av{background:var(--s3);border:1px solid var(--border2);color:var(--text2);}
+.msg-bubble{max-width:72%;padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.65;}
+.msg.ai .msg-bubble{background:var(--s2);border:1px solid var(--border);border-radius:3px 10px 10px 10px;}
+.msg.user .msg-bubble{background:var(--accent);color:#fff;border-radius:10px 3px 10px 10px;}
+.msg-bubble code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px;}
+.msg-bubble pre{background:rgba(0,0,0,.35);padding:10px;border-radius:6px;overflow-x:auto;margin:6px 0;font-family:var(--mono);font-size:11px;line-height:1.5;}
+
+/* Web results in chat */
+.web-results{background:var(--s3);border:1px solid var(--border2);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.web-results-header{padding:6px 12px;font-size:11px;color:var(--text3);border-bottom:1px solid var(--border);background:var(--s2);}
+.web-result-item{padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;}
+.web-result-item:last-child{border-bottom:none;}
+.web-result-title{color:var(--accent);font-weight:600;margin-bottom:2px;}
+.web-result-snippet{color:var(--text2);line-height:1.4;}
+.web-result-url{color:var(--text3);font-size:10px;font-family:var(--mono);margin-top:2px;}
+
+.msg-files{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;}
+.msg-img{border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.1);}
+.msg-img img{display:block;max-width:180px;max-height:130px;object-fit:cover;}
+.msg-doc{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.2);border-radius:5px;padding:5px 9px;font-size:11px;font-family:var(--mono);}
+
+.thinking{display:flex;gap:4px;padding:4px 0;}
+.td{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:td 1.2s infinite;}
+.td:nth-child(2){animation-delay:.2s;}.td:nth-child(3){animation-delay:.4s;}
+@keyframes td{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-5px);opacity:1;}}
+
+/* Search status badge */
+.search-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--accent);margin-bottom:6px;}
+
+/* Chat input */
+.chat-input-wrap{padding:12px 20px 16px;border-top:1px solid var(--border);background:var(--s1);display:flex;flex-direction:column;gap:8px;}
+.attachments-bar{display:none;flex-wrap:wrap;gap:6px;}
+.attachments-bar.show{display:flex;}
+.a-chip{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-size:11px;font-family:var(--mono);max-width:180px;}
+.a-chip img{width:24px;height:24px;object-fit:cover;border-radius:3px;flex-shrink:0;}
+.a-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.a-chip-x{color:var(--text3);background:none;border:none;font-size:14px;flex-shrink:0;padding:0 1px;transition:color .15s;}
+.a-chip-x:hover{color:var(--danger);}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end;}
+.chat-input-zone{flex:1;position:relative;}
+.drop-overlay{position:absolute;inset:0;background:rgba(59,130,246,.08);border:2px dashed var(--accent);border-radius:8px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;z-index:5;pointer-events:none;}
+.drop-overlay.show{display:flex;}
+.drop-overlay span{font-size:22px;}
+.drop-overlay p{font-size:12px;color:var(--accent);font-weight:600;}
+.chat-ta{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;resize:none;min-height:42px;max-height:110px;outline:none;font-size:13px;transition:border-color .15s;line-height:1.5;}
+.chat-ta:focus{border-color:var(--accent);}
+.chat-ta.drag{border-color:var(--accent);border-style:dashed;}
+.chat-btns{display:flex;gap:6px;flex-shrink:0;}
+.ic-btn{width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text2);font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.ic-btn:hover{border-color:var(--border2);color:var(--text);}
+.ic-btn.web-on{border-color:var(--accent);color:var(--accent);background:rgba(59,130,246,.1);}
+.send-btn{width:40px;height:40px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:17px;display:flex;align-items:center;justify-content:center;transition:opacity .15s;}
+.send-btn:hover{opacity:.85;}
+.send-btn:disabled{opacity:.4;}
+.chat-hints{display:flex;gap:8px;font-size:11px;color:var(--text3);}
+.hint-tag{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;}
+
+/* ══════════════ AUTOMATION ══════════════ */
+.auto-layout{display:flex;width:100%;height:100%;}
+.auto-sidebar{width:200px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.auto-sidebar-top{padding:10px 8px 4px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;}
+.auto-nav{flex:1;padding:6px;display:flex;flex-direction:column;gap:1px;overflow-y:auto;}
+.auto-nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;color:var(--text2);font-size:12px;font-weight:600;border:1px solid transparent;transition:all .15s;}
+.auto-nav-item:hover{background:var(--s2);color:var(--text);}
+.auto-nav-item.active{background:var(--s2);color:var(--accent3);border-color:var(--border);}
+.auto-nav-item .ni{font-size:15px;width:18px;text-align:center;}
+.add-tab-btn{margin:6px 8px 10px;background:transparent;border:1px dashed var(--border);color:var(--text3);border-radius:6px;padding:7px 10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px;transition:all .15s;}
+.add-tab-btn:hover{border-color:var(--accent3);color:var(--accent3);}
+
+.auto-content{flex:1;overflow:hidden;position:relative;}
+.auto-panel{display:none;height:100%;flex-direction:column;}
+.auto-panel.active{display:flex;}
+.panel-hdr{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--s1);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.panel-hdr h2{font-size:15px;font-weight:700;}
+.panel-hdr .ph-icon{font-size:18px;}
+.panel-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.tag.green{background:rgba(16,185,129,.12);color:var(--accent3);}
+.tag.red{background:rgba(239,68,68,.12);color:var(--danger);}
+.tag.blue{background:rgba(59,130,246,.12);color:var(--accent);}
+.setup-box{background:linear-gradient(135deg,rgba(59,130,246,.05),rgba(139,92,246,.05));border:1px solid var(--border2);border-radius:8px;padding:12px 14px;display:flex;gap:10px;margin-bottom:14px;font-size:12px;line-height:1.6;}
+.setup-box code{background:var(--s3);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--accent);}
+
+/* ── SCREENSHOT PANEL ── */
+.ss-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.ss-path-input{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:12px;outline:none;font-family:var(--mono);}
+.ss-path-input:focus{border-color:var(--accent);}
+.action-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;transition:opacity .15s;}
+.action-btn:hover{opacity:.85;}
+.action-btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.action-btn.ghost:hover{border-color:var(--border2);color:var(--text);}
+.ss-folders{display:flex;flex-direction:column;gap:10px;}
+.ss-folder{background:var(--s1);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.ss-folder-hdr{padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .15s;}
+.ss-folder-hdr:hover{background:var(--s2);}
+.ss-folder-date{font-size:13px;font-weight:600;}
+.ss-folder-count{margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--mono);}
+.ss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;padding:10px;}
+.ss-thumb{aspect-ratio:16/9;background:var(--s2);border:1px solid var(--border);border-radius:5px;overflow:hidden;cursor:pointer;position:relative;transition:all .15s;}
+.ss-thumb:hover{border-color:var(--accent2);transform:scale(1.02);}
+.ss-thumb img{width:100%;height:100%;object-fit:cover;}
+.ss-thumb-ph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);font-size:20px;}
+.ss-thumb-info{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.8));padding:4px 6px;font-size:9px;font-family:var(--mono);}
+.ss-thumb-del{position:absolute;top:4px;right:4px;background:rgba(239,68,68,.8);border:none;color:#fff;border-radius:3px;width:20px;height:20px;font-size:11px;display:none;align-items:center;justify-content:center;}
+.ss-thumb:hover .ss-thumb-del{display:flex;}
+
+/* ── FILE SYSTEM PANEL ── */
+.fs-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.fs-path-bar{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--mono);outline:none;}
+.fs-path-bar:focus{border-color:var(--accent);}
+.fs-drives{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.drive-chip{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .15s;}
+.drive-chip:hover{border-color:var(--accent);color:var(--accent);}
+.drive-chip .dc-bar{height:3px;border-radius:2px;margin-top:4px;}
+.fs-table{width:100%;border-collapse:collapse;}
+.fs-table th{text-align:left;padding:6px 10px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border);font-weight:600;}
+.fs-table td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px;transition:background .1s;}
+.fs-table tr:hover td{background:var(--s2);}
+.fs-table tr:last-child td{border-bottom:none;}
+.fs-item-name{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--text);}
+.fs-item-name:hover{color:var(--accent);}
+.fs-size{font-family:var(--mono);font-size:11px;color:var(--text3);}
+.fs-date{font-family:var(--mono);font-size:11px;color:var(--text3);}
+.breadcrumb{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;}
+.bc-item{color:var(--accent);cursor:pointer;}
+.bc-item:hover{text-decoration:underline;}
+.bc-sep{color:var(--text3);}
+
+/* ── APP MANAGER PANEL ── */
+.app-search{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 12px;font-size:13px;outline:none;margin-bottom:12px;}
+.app-search:focus{border-color:var(--accent);}
+.app-tabs{display:flex;gap:4px;margin-bottom:12px;}
+.app-tab-btn{padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;transition:all .15s;}
+.app-tab-btn.active{background:var(--s2);color:var(--text);border-color:var(--border2);}
+.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+.app-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px;}
+.app-card:hover{border-color:var(--border2);background:var(--s2);}
+.app-icon{width:36px;height:36px;border-radius:7px;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.app-info{flex:1;overflow:hidden;}
+.app-name{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.app-pub{font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.app-version{font-size:10px;color:var(--text3);font-family:var(--mono);}
+.app-loading{display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3);flex-direction:column;gap:8px;}
+
+/* ── DOCUMENT PANEL (Google Docs style) ── */
+.doc-container{display:flex;flex-direction:column;height:100%;}
+.doc-menubar{display:flex;align-items:center;gap:2px;padding:4px 8px;border-bottom:1px solid var(--border);background:var(--s1);flex-shrink:0;flex-wrap:wrap;}
+.doc-menu-btn{padding:3px 8px;border-radius:4px;background:transparent;border:none;color:var(--text2);font-size:12px;transition:all .15s;}
+.doc-menu-btn:hover{background:var(--s2);color:var(--text);}
+.doc-sep{width:1px;height:20px;background:var(--border);margin:0 2px;}
+.doc-toolbar{display:flex;align-items:center;gap:2px;padding:5px 10px;border-bottom:1px solid var(--border);background:var(--s1);flex-shrink:0;flex-wrap:wrap;}
+.doc-tb-btn{width:28px;height:28px;border-radius:4px;background:transparent;border:1px solid transparent;color:var(--text2);font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:var(--font);}
+.doc-tb-btn:hover{background:var(--s2);border-color:var(--border);color:var(--text);}
+.doc-tb-btn.active{background:var(--s3);border-color:var(--border2);color:var(--accent);}
+.doc-select{background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:2px 6px;font-size:12px;font-family:var(--font);outline:none;}
+.doc-select option{background:var(--s2);}
+.font-size-input{width:42px;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:2px 4px;font-size:12px;text-align:center;outline:none;}
+.color-btn{width:28px;height:28px;border-radius:4px;border:2px solid var(--border);cursor:pointer;overflow:hidden;padding:0;}
+.color-btn input[type=color]{width:100%;height:100%;border:none;padding:0;cursor:pointer;background:none;}
+.doc-page-area{flex:1;overflow-y:auto;background:#2a2a3a;display:flex;justify-content:center;padding:24px 16px;}
+.doc-page{width:794px;min-height:1123px;background:#1a1f2e;border:1px solid var(--border);border-radius:4px;box-shadow:var(--shadow);padding:72px 80px;position:relative;}
+.doc-title-input{width:100%;background:transparent;border:none;color:var(--text);font-size:22px;font-weight:700;outline:none;margin-bottom:16px;font-family:var(--font);}
+.doc-title-input::placeholder{color:var(--text3);}
+.doc-editor{min-height:800px;outline:none;color:var(--text);font-size:13px;line-height:1.8;caret-color:var(--accent);}
+.doc-editor:empty::before{content:attr(data-placeholder);color:var(--text3);pointer-events:none;}
+.doc-editor p{margin-bottom:8px;}
+.doc-editor h1{font-size:24px;font-weight:700;margin:16px 0 8px;}
+.doc-editor h2{font-size:19px;font-weight:700;margin:14px 0 6px;}
+.doc-editor h3{font-size:15px;font-weight:600;margin:12px 0 4px;}
+.doc-editor ul,.doc-editor ol{margin-left:24px;margin-bottom:8px;}
+.doc-editor li{margin-bottom:3px;}
+.doc-editor blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--text2);margin:8px 0;}
+.doc-editor table{border-collapse:collapse;margin:8px 0;width:100%;}
+.doc-editor table td,.doc-editor table th{border:1px solid var(--border2);padding:6px 10px;font-size:12px;}
+.doc-editor table th{background:var(--s3);font-weight:600;}
+.doc-editor a{color:var(--accent);text-decoration:underline;}
+.doc-status{padding:4px 12px;border-top:1px solid var(--border);background:var(--s1);font-size:11px;color:var(--text3);display:flex;gap:12px;flex-shrink:0;font-family:var(--mono);}
+.doc-word-count{margin-left:auto;}
+/* Find/replace bar */
+.find-bar{position:absolute;top:60px;right:16px;background:var(--s2);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;display:none;gap:6px;flex-direction:column;z-index:20;box-shadow:var(--shadow);min-width:260px;}
+.find-bar.show{display:flex;}
+.find-input{background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;font-size:12px;outline:none;width:100%;}
+
+/* ── EMAIL PANEL ── */
+.email-layout{display:flex;height:100%;overflow:hidden;}
+.email-list-col{width:280px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;}
+.email-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.email-item:hover{background:var(--s2);}
+.email-item.active{background:var(--s2);border-left:2px solid var(--accent2);}
+.email-item.unread .email-subj{font-weight:700;color:var(--text);}
+.email-from{font-size:11px;font-weight:600;color:var(--accent2);margin-bottom:2px;}
+.email-subj{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.email-time{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px;}
+.email-preview-col{flex:1;padding:20px;overflow-y:auto;}
+.email-empty-state{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:8px;}
+.email-view-subj{font-size:17px;font-weight:700;margin-bottom:8px;}
+.email-view-meta{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.email-view-body{font-size:13px;line-height:1.7;}
+
+/* ── CODE PANEL ── */
+.code-projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:20px;}
+.code-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+.code-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.code-card.arduino::before{background:var(--accent3);}
+.code-card.python::before{background:var(--purple);}
+.code-card.js::before{background:var(--accent4);}
+.code-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.code-tag{font-size:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px;}
+.code-tag.arduino{color:var(--accent3);}
+.code-tag.python{color:var(--purple);}
+.code-tag.js{color:var(--accent4);}
+.code-card-name{font-size:14px;font-weight:700;margin-bottom:4px;}
+.code-card-desc{font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:10px;}
+.code-card-meta{display:flex;gap:8px;font-size:10px;color:var(--text3);font-family:var(--mono);}
+.code-editor-wrap{background:var(--s1);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.code-editor-tabbar{display:flex;background:var(--s2);border-bottom:1px solid var(--border);}
+.code-etab{padding:7px 14px;font-size:11px;font-family:var(--mono);color:var(--text3);cursor:pointer;border-right:1px solid var(--border);transition:all .15s;}
+.code-etab.active{color:var(--accent3);background:var(--s1);}
+.code-editor-body{padding:14px;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--accent3);max-height:300px;overflow-y:auto;white-space:pre;}
+
+/* ── CUSTOM PANELS ── */
+.custom-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3);}
+.custom-placeholder .cp-icon{font-size:44px;}
+.custom-placeholder h3{font-size:17px;color:var(--text2);}
+.custom-placeholder p{font-size:12px;max-width:300px;text-align:center;line-height:1.6;}
+
+/* ── ADD MORE MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100;}
+.modal-bg.show{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:22px;width:420px;animation:popIn .18s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:4px;}
+.modal p{font-size:12px;color:var(--text3);margin-bottom:18px;}
+.modal-field{margin-bottom:12px;}
+.modal-field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:5px;}
+.modal-input{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;}
+.modal-input:focus{border-color:var(--accent);}
+.icon-picker{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;}
+.icon-opt{width:34px;height:34px;border-radius:5px;border:1px solid var(--border);background:transparent;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+.icon-opt:hover,.icon-opt.sel{border-color:var(--accent3);background:var(--s2);}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:7px 14px;font-size:12px;transition:all .15s;}
+.btn-cancel:hover{border-color:var(--border2);color:var(--text);}
+.btn-confirm{background:var(--accent3);color:#000;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;transition:opacity .15s;}
+.btn-confirm:hover{opacity:.85;}
+
+/* Lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:200;}
+.lightbox.show{display:flex;}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:6px;}
+.lb-close{position:absolute;top:16px;right:20px;background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">Seth<em>OS</em></div>
+  <div class="tb-tabs">
+    <button class="tb-tab active" data-tab="chat" onclick="switchPage('chat',this)">💬 Chat</button>
+    <button class="tb-tab" data-tab="auto" onclick="switchPage('auto',this)">⚡ Automation</button>
+  </div>
+  <div class="tb-right">
+    <div class="server-indicator"><div class="dot" id="serverDot"></div><span id="serverLabel">connecting...</span></div>
+    <button class="tb-btn" onclick="restartServer()" title="Restart Python server">↺ Server</button>
+  </div>
+</div>
+
+<!-- ═══════════ CHAT PAGE ═══════════ -->
+<div class="page active" id="page-chat">
+  <div class="chat-layout">
+    <div class="chat-sidebar">
+      <div class="sidebar-label">Model</div>
+      <select class="model-select" id="modelSelect">
+        <option value="qwen2.5">qwen2.5</option>
+        <option value="qwen2.5-coder">qwen2.5-coder</option>
+        <option value="mistral">mistral</option>
+        <option value="llama3.2">llama3.2</option>
+        <option value="gemma2">gemma2</option>
+        <option value="codellama">codellama</option>
+      </select>
+      <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
+      <div class="sidebar-label">History</div>
+      <div class="chat-hist" id="chatHist"></div>
+    </div>
+    <div class="chat-main">
+      <div class="chat-msgs" id="chatMsgs">
+        <div class="chat-empty" id="chatEmpty">
+          <div class="e-icon">🤖</div>
+          <h3>SethOS Chat</h3>
+          <p>Local AI · Web Search · File Reading</p>
+        </div>
+      </div>
+      <div class="chat-input-wrap" id="chatInputWrap">
+        <div class="attachments-bar" id="attachBar"></div>
+        <div class="chat-input-row">
+          <button class="ic-btn" onclick="document.getElementById('fileIn').click()" title="Attach file">📎</button>
+          <input type="file" id="fileIn" multiple style="display:none" onchange="handleFiles(this.files)"/>
+          <div class="chat-input-zone" id="dropZoneWrap">
+            <div class="drop-overlay" id="dropOverlay"><span>📂</span><p>Drop files here</p></div>
+            <textarea class="chat-ta" id="chatTa" placeholder="Ask anything… drop files or use 🌐 for web search" onkeydown="chatKey(event)" oninput="taResize(this)"></textarea>
+          </div>
+          <div class="chat-btns">
+            <button class="ic-btn" id="webBtn" title="Toggle web search (adds internet access)" onclick="toggleWeb()" title="Web search">🌐</button>
+            <button class="send-btn" id="sendBtn" onclick="sendChat()">➤</button>
+          </div>
+        </div>
+        <div class="chat-hints">
+          <span class="hint-tag">Enter to send</span>
+          <span class="hint-tag">Shift+Enter for newline</span>
+          <span class="hint-tag">📎 attach PDF/code/image</span>
+          <span class="hint-tag">🌐 web search</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ AUTOMATION PAGE ═══════════ -->
+<div class="page" id="page-auto">
+  <div class="auto-layout">
+    <div class="auto-sidebar">
+      <div class="auto-sidebar-top">Automation</div>
+      <div class="auto-nav" id="autoNav">
+        <div class="auto-nav-item active" onclick="switchPanel('screenshots',this)"><span class="ni">🖼️</span>Screenshots</div>
+        <div class="auto-nav-item" onclick="switchPanel('filesystem',this)"><span class="ni">🗂️</span>File System</div>
+        <div class="auto-nav-item" onclick="switchPanel('apps',this)"><span class="ni">📦</span>App Manager</div>
+        <div class="auto-nav-item" onclick="switchPanel('docs',this)"><span class="ni">📝</span>Documents</div>
+        <div class="auto-nav-item" onclick="switchPanel('email',this)"><span class="ni">📧</span>Gmail</div>
+        <div class="auto-nav-item" onclick="switchPanel('code',this)"><span class="ni">💻</span>Code Projects</div>
+      </div>
+      <button class="add-tab-btn" onclick="openModal()">＋ Add more</button>
+    </div>
+    <div class="auto-content">
+
+      <!-- SCREENSHOTS -->
+      <div class="auto-panel active" id="panel-screenshots">
+        <div class="panel-hdr"><span class="ph-icon">🖼️</span><h2>Screenshot Manager</h2><span class="tag green" style="margin-left:auto;">Auto-sort on</span></div>
+        <div class="panel-body">
+          <div class="setup-box"><span>📸</span><div>Screenshots are automatically sorted into <code>date/time.png</code> folders. Set your screenshots folder path and click <strong>Load</strong>.</div></div>
+          <div class="ss-toolbar">
+            <input class="ss-path-input" id="ssPath" placeholder="e.g. C:\Users\Seth\Pictures\Screenshots"/>
+            <button class="action-btn ghost" onclick="pickSSFolder()">📂 Browse</button>
+            <button class="action-btn" onclick="loadScreenshots()">Load</button>
+            <button class="action-btn ghost" onclick="loadScreenshots()">🔄 Refresh</button>
+          </div>
+          <div class="ss-folders" id="ssFolders">
+            <div style="color:var(--text3);font-size:12px;">Set your screenshots folder path above and click Load.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILE SYSTEM -->
+      <div class="auto-panel" id="panel-filesystem">
+        <div class="panel-hdr"><span class="ph-icon">🗂️</span><h2>File System</h2></div>
+        <div class="panel-body">
+          <div class="fs-drives" id="fsDrives"></div>
+          <div class="breadcrumb" id="fsBreadcrumb"></div>
+          <div class="fs-toolbar">
+            <input class="fs-path-bar" id="fsPathBar" placeholder="Path..." onkeydown="if(event.key==='Enter')navTo(this.value)"/>
+            <button class="action-btn ghost" onclick="pickFSFolder()">📂</button>
+            <button class="action-btn ghost" onclick="navTo(document.getElementById('fsPathBar').value)">Go</button>
+          </div>
+          <table class="fs-table" id="fsTable">
+            <thead><tr><th>Name</th><th>Size</th><th>Modified</th><th>Type</th></tr></thead>
+            <tbody id="fsTbody"><tr><td colspan="4" style="color:var(--text3);text-align:center;padding:20px;">Loading file system...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- APP MANAGER -->
+      <div class="auto-panel" id="panel-apps">
+        <div class="panel-hdr"><span class="ph-icon">📦</span><h2>App Manager</h2><span id="appCountTag" class="tag blue" style="margin-left:auto;">Loading...</span></div>
+        <div class="panel-body">
+          <input class="app-search" id="appSearch" placeholder="Search apps..." oninput="filterApps()"/>
+          <div class="app-tabs">
+            <button class="app-tab-btn active" onclick="showAppTab('apps',this)">🖥️ Applications</button>
+            <button class="app-tab-btn" onclick="showAppTab('games',this)">🎮 Games</button>
+          </div>
+          <div class="app-loading" id="appLoading"><div>⏳</div><div>Scanning installed apps...</div></div>
+          <div class="app-grid" id="appGrid" style="display:none;"></div>
+          <div class="app-grid" id="gameGrid" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- DOCUMENTS -->
+      <div class="auto-panel" id="panel-docs">
+        <div class="panel-hdr"><span class="ph-icon">📝</span><h2>Documents</h2>
+          <div style="margin-left:auto;display:flex;gap:6px;">
+            <button class="action-btn ghost" onclick="docNew()" style="padding:5px 10px;font-size:11px;">+ New</button>
+            <button class="action-btn ghost" onclick="docExport('html')" style="padding:5px 10px;font-size:11px;">Export HTML</button>
+            <button class="action-btn ghost" onclick="docExport('txt')" style="padding:5px 10px;font-size:11px;">Export TXT</button>
+            <button class="action-btn ghost" onclick="docPrint()" style="padding:5px 10px;font-size:11px;">🖨️ Print</button>
+          </div>
+        </div>
+        <div class="doc-container" style="flex:1;overflow:hidden;">
+          <div class="doc-menubar">
+            <button class="doc-menu-btn" onclick="execCmd('undo')">Undo</button>
+            <button class="doc-menu-btn" onclick="execCmd('redo')">Redo</button>
+            <div class="doc-sep"></div>
+            <button class="doc-menu-btn" onclick="execCmd('selectAll')">Select All</button>
+            <button class="doc-menu-btn" onclick="toggleFind()">Find</button>
+            <div class="doc-sep"></div>
+            <button class="doc-menu-btn" onclick="insertTable()">Insert Table</button>
+            <button class="doc-menu-btn" onclick="insertLink()">Insert Link</button>
+            <button class="doc-menu-btn" onclick="insertHR()">Divider</button>
+          </div>
+          <div class="doc-toolbar">
+            <select class="doc-select" id="fontFamily" onchange="execCmdVal('fontName',this.value)">
+              <option value="Outfit">Outfit</option>
+              <option value="Georgia">Georgia</option>
+              <option value="DM Mono">DM Mono</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Arial">Arial</option>
+              <option value="Courier New">Courier New</option>
+            </select>
+            <input type="number" class="font-size-input" id="fontSize" value="13" min="8" max="96" onchange="execCmdVal('fontSize', sizeToFontTag(this.value))"/>
+            <div class="doc-sep"></div>
+            <select class="doc-select" onchange="execCmdVal('formatBlock',this.value)">
+              <option value="p">Paragraph</option>
+              <option value="h1">Heading 1</option>
+              <option value="h2">Heading 2</option>
+              <option value="h3">Heading 3</option>
+              <option value="blockquote">Quote</option>
+              <option value="pre">Code</option>
+            </select>
+            <div class="doc-sep"></div>
+            <button class="doc-tb-btn" onclick="execCmd('bold')" title="Bold"><b>B</b></button>
+            <button class="doc-tb-btn" onclick="execCmd('italic')" title="Italic"><i>I</i></button>
+            <button class="doc-tb-btn" onclick="execCmd('underline')" title="Underline"><u>U</u></button>
+            <button class="doc-tb-btn" onclick="execCmd('strikeThrough')" title="Strikethrough"><s>S</s></button>
+            <div class="doc-sep"></div>
+            <button class="doc-tb-btn" onclick="execCmd('justifyLeft')" title="Align Left">⬅</button>
+            <button class="doc-tb-btn" onclick="execCmd('justifyCenter')" title="Center">⬛</button>
+            <button class="doc-tb-btn" onclick="execCmd('justifyRight')" title="Align Right">➡</button>
+            <button class="doc-tb-btn" onclick="execCmd('justifyFull')" title="Justify">☰</button>
+            <div class="doc-sep"></div>
+            <button class="doc-tb-btn" onclick="execCmd('insertUnorderedList')" title="Bullet List">•</button>
+            <button class="doc-tb-btn" onclick="execCmd('insertOrderedList')" title="Numbered List">1.</button>
+            <button class="doc-tb-btn" onclick="execCmd('indent')" title="Indent">→</button>
+            <button class="doc-tb-btn" onclick="execCmd('outdent')" title="Outdent">←</button>
+            <div class="doc-sep"></div>
+            <button class="doc-tb-btn" onclick="execCmd('superscript')" title="Superscript">x²</button>
+            <button class="doc-tb-btn" onclick="execCmd('subscript')" title="Subscript">x₂</button>
+            <div class="doc-sep"></div>
+            <label class="color-btn" title="Text Color"><input type="color" onchange="execCmdVal('foreColor',this.value)" value="#e2e8f4"/></label>
+            <label class="color-btn" title="Highlight" style="background:rgba(251,191,36,.3)"><input type="color" onchange="execCmdVal('hiliteColor',this.value)" value="#fbbf24"/></label>
+            <div class="doc-sep"></div>
+            <button class="doc-tb-btn" onclick="execCmd('removeFormat')" title="Clear Formatting">✕</button>
+          </div>
+          <div style="flex:1;overflow:hidden;position:relative;">
+            <div class="find-bar" id="findBar">
+              <input class="find-input" id="findInput" placeholder="Find..." oninput="doFind()"/>
+              <input class="find-input" id="replaceInput" placeholder="Replace with..."/>
+              <div style="display:flex;gap:6px;">
+                <button class="action-btn ghost" style="font-size:11px;padding:4px 8px;" onclick="doReplace()">Replace</button>
+                <button class="action-btn ghost" style="font-size:11px;padding:4px 8px;" onclick="doReplaceAll()">All</button>
+                <button class="action-btn ghost" style="font-size:11px;padding:4px 8px;" onclick="toggleFind()">✕</button>
+              </div>
+            </div>
+            <div class="doc-page-area">
+              <div class="doc-page">
+                <input class="doc-title-input" id="docTitle" placeholder="Untitled document" oninput="updateDocStatus()"/>
+                <div class="doc-editor" id="docEditor" contenteditable="true" data-placeholder="Start writing here…" oninput="updateDocStatus()" onkeydown="docKeyDown(event)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="doc-status">
+            <span id="docSaved">● Unsaved</span>
+            <span id="docWordCount" class="doc-word-count">0 words</span>
+            <span id="docCharCount">0 chars</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMAIL -->
+      <div class="auto-panel" id="panel-email">
+        <div class="panel-hdr"><span class="ph-icon">📧</span><h2>Gmail</h2><span class="tag red" id="emailTag">Not connected</span></div>
+        <div class="panel-body" style="padding:0;display:flex;height:100%;overflow:hidden;">
+          <div id="emailSetup" style="width:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:30px;text-align:center;">
+            <div style="font-size:44px;">📬</div>
+            <div style="font-size:17px;font-weight:700;">Connect Gmail</div>
+            <div class="setup-box" style="text-align:left;max-width:380px;">
+              <span>📋</span><div>1. Go to <strong>console.cloud.google.com</strong><br/>2. Enable Gmail API → Download <code>credentials.json</code><br/>3. Place in same folder as <code>sethOS_server.py</code><br/>4. Restart server → click Connect</div>
+            </div>
+            <button class="action-btn" onclick="connectEmail()">Connect Gmail</button>
+          </div>
+          <div id="emailApp" class="email-layout" style="display:none;">
+            <div class="email-list-col" id="emailList"></div>
+            <div class="email-preview-col" id="emailPreview"><div class="email-empty-state"><div style="font-size:32px;">✉️</div><div>Select an email</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CODE PROJECTS -->
+      <div class="auto-panel" id="panel-code">
+        <div class="panel-hdr"><span class="ph-icon">💻</span><h2>Code Projects</h2></div>
+        <div class="panel-body">
+          <div class="setup-box"><span>🔍</span><div>The server scans your projects folder for <code>.ino</code>, <code>.py</code>, <code>.js</code> files. Demo projects shown below.</div></div>
+          <div class="code-projects-grid" id="codeGrid">
+            <div class="code-card arduino" onclick="openCodeProject('linefollower')"><div class="code-tag arduino">Arduino</div><div class="code-card-name">Line Follower Robot</div><div class="code-card-desc">IR sensor + PID control for autonomous line following</div><div class="code-card-meta"><span>📄 2 files</span><span>🕐 Feb 2025</span></div></div>
+            <div class="code-card arduino" onclick="openCodeProject('arm')"><div class="code-tag arduino">Arduino</div><div class="code-card-name">Robotic Arm</div><div class="code-card-desc">6-DOF servo arm with serial communication</div><div class="code-card-meta"><span>📄 1 file</span><span>🕐 Feb 2025</span></div></div>
+            <div class="code-card python" onclick="openCodeProject('mlclassifier')"><div class="code-tag python">Python</div><div class="code-card-name">ML Classifier</div><div class="code-card-desc">CNN image classification with TensorFlow</div><div class="code-card-meta"><span>📄 2 files</span><span>🕐 Feb 2025</span></div></div>
+            <div class="code-card python" onclick="openCodeProject('sqldash')"><div class="code-tag python">Python</div><div class="code-card-name">SQL Dashboard</div><div class="code-card-desc">Flask API + React frontend with SQLite</div><div class="code-card-meta"><span>📄 2 files</span><span>🕐 Feb 2025</span></div></div>
+          </div>
+          <div id="codeEditorWrap" style="display:none;" class="code-editor-wrap">
+            <div class="code-editor-tabbar" id="codeTabbar"></div>
+            <div class="code-editor-body" id="codeBody"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom panels injected here -->
+      <div id="customPanels"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MORE MODAL -->
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <h3>Add Automation Tab</h3>
+    <p>Create a custom panel for anything you want to track or manage.</p>
+    <div class="modal-field"><label>Tab Name</label><input class="modal-input" id="newTabName" placeholder="e.g. IoT Devices, Notes, Tasks..."/></div>
+    <div class="modal-field">
+      <label>Icon</label>
+      <div class="icon-picker" id="iconPicker">
+        <div class="icon-opt sel" onclick="pickIcon(this,'🔧')">🔧</div>
+        <div class="icon-opt" onclick="pickIcon(this,'📡')">📡</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🤖')">🤖</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🧪')">🧪</div>
+        <div class="icon-opt" onclick="pickIcon(this,'📊')">📊</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🎮')">🎮</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🔌')">🔌</div>
+        <div class="icon-opt" onclick="pickIcon(this,'⚙️')">⚙️</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🚀')">🚀</div>
+        <div class="icon-opt" onclick="pickIcon(this,'📌')">📌</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🗒️')">🗒️</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🔔')">🔔</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🛠️')">🛠️</div>
+        <div class="icon-opt" onclick="pickIcon(this,'💡')">💡</div>
+        <div class="icon-opt" onclick="pickIcon(this,'📷')">📷</div>
+        <div class="icon-opt" onclick="pickIcon(this,'🌐')">🌐</div>
+      </div>
+    </div>
+    <div class="modal-field"><label>Description</label><input class="modal-input" id="newTabDesc" placeholder="What will this tab be used for?"/></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="addCustomTab()">Add Tab</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lbImg" src=""/>
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+</div>
+
+<script>
+const API = 'http://localhost:5000';
+const OLLAMA = 'http://localhost:11434';
+
+// ═══════════════════════
+// PAGE / PANEL SWITCHING
+// ═══════════════════════
+function switchPage(tab, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tb-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  el.classList.add('active');
+  if (tab === 'auto') {
+    loadDiskUsage();
+    loadApps();
+    loadFS(null);
+  }
+}
+
+function switchPanel(id, el) {
+  document.querySelectorAll('.auto-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.auto-nav-item').forEach(n => n.classList.remove('active'));
+  const panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ═══════════════════════
+// SERVER STATUS
+// ═══════════════════════
+async function checkServer() {
+  try {
+    const r = await fetch(`${API}/api/health`, {signal: AbortSignal.timeout(2000)});
+    if (r.ok) {
+      document.getElementById('serverDot').classList.add('on');
+      document.getElementById('serverLabel').textContent = 'server online';
+    } else throw new Error();
+  } catch {
+    document.getElementById('serverDot').classList.remove('on');
+    document.getElementById('serverLabel').textContent = 'server offline';
+  }
+}
+checkServer(); setInterval(checkServer, 8000);
+
+async function restartServer() {
+  if (window.sethOS) { await window.sethOS.restartServer(); setTimeout(checkServer, 3000); }
+  else alert('Restart: run  python sethOS_server.py  in CMD');
+}
+
+// ═══════════════════════
+// CHAT STATE
+// ═══════════════════════
+let sessions = [], curSession = null, webOn = false, attachedFiles = [];
+
+function newChat() {
+  const s = {id: Date.now(), title: 'New Chat', messages: []};
+  sessions.unshift(s); curSession = s;
+  renderHist(); renderMsgs();
+}
+
+function renderHist() {
+  const el = document.getElementById('chatHist');
+  el.innerHTML = sessions.map(s => `
+    <div class="hist-item ${s.id===curSession?.id?'active':''}" onclick="loadSession(${s.id})">
+      <span class="hist-title">${s.title}</span>
+      <button class="hist-del" onclick="event.stopPropagation();deleteSession(${s.id})" title="Delete">🗑</button>
+    </div>`).join('');
+}
+
+function loadSession(id) { curSession = sessions.find(s=>s.id===id); renderHist(); renderMsgs(); }
+
+function deleteSession(id) {
+  sessions = sessions.filter(s=>s.id!==id);
+  if (curSession?.id === id) { curSession = sessions[0] || null; }
+  renderHist(); renderMsgs();
+}
+
+function renderMsgs() {
+  const el = document.getElementById('chatMsgs');
+  const empty = document.getElementById('chatEmpty');
+  el.querySelectorAll('.msg,.search-badge-wrap').forEach(m => m.remove());
+  if (!curSession || !curSession.messages.length) { empty.style.display='flex'; return; }
+  empty.style.display = 'none';
+  curSession.messages.forEach(m => appendMsg(m.role, m.content, false, m.files, m.webResults));
+  el.scrollTop = el.scrollHeight;
+}
+
+// ═══════════════════════
+// FILE ATTACHMENTS
+// ═══════════════════════
+function handleFiles(files) { Array.from(files).forEach(readFile); document.getElementById('fileIn').value=''; }
+
+function readFile(file) {
+  const reader = new FileReader();
+  const isImg = file.type.startsWith('image/');
+  const isTxt = file.type.startsWith('text/') || /\.(py|js|ino|json|md|txt|csv|html|css|sql|ts|jsx|tsx|cpp|c|h|sh|bat|yaml|yml)$/i.test(file.name);
+  reader.onload = e => {
+    const entry = {name: file.name, type: file.type};
+    if (isImg) entry.dataUrl = e.target.result;
+    else if (isTxt) entry.text = e.target.result;
+    attachedFiles.push(entry);
+    renderAttach();
+  };
+  if (isImg) reader.readAsDataURL(file);
+  else if (isTxt) reader.readAsText(file);
+  else { // PDF or other — send to server to extract
+    const fd = new FormData(); fd.append('file', file);
+    fetch(`${API}/api/read-file`, {method:'POST', body:fd})
+      .then(r=>r.json()).then(data => {
+        const entry = {name: file.name, type: file.type};
+        if (data.type === 'pdf') entry.text = `[PDF: ${file.name}, ${data.pages} pages]\n\n${data.text}`;
+        else if (data.type === 'image') entry.dataUrl = `data:${data.mime};base64,${data.base64}`;
+        else entry.text = data.text || '';
+        attachedFiles.push(entry);
+        renderAttach();
+      }).catch(() => { attachedFiles.push({name: file.name, type: file.type, text:'[Could not read file]'}); renderAttach(); });
+  }
+}
+
+function renderAttach() {
+  const bar = document.getElementById('attachBar');
+  bar.innerHTML = attachedFiles.map((f,i) => `
+    <div class="a-chip">
+      ${f.dataUrl && f.type.startsWith('image/') ? `<img src="${f.dataUrl}"/>` : '<span>📄</span>'}
+      <span class="a-chip-name">${f.name}</span>
+      <button class="a-chip-x" onclick="removeAttach(${i})">✕</button>
+    </div>`).join('');
+  bar.classList.toggle('show', attachedFiles.length > 0);
+}
+
+function removeAttach(i) { attachedFiles.splice(i,1); renderAttach(); }
+
+// Drag & drop
+const wrap = document.getElementById('chatInputWrap');
+wrap.addEventListener('dragover', e => { e.preventDefault(); document.getElementById('dropOverlay').classList.add('show'); document.getElementById('chatTa').classList.add('drag'); });
+wrap.addEventListener('dragleave', e => { if (!wrap.contains(e.relatedTarget)) { document.getElementById('dropOverlay').classList.remove('show'); document.getElementById('chatTa').classList.remove('drag'); } });
+wrap.addEventListener('drop', e => { e.preventDefault(); document.getElementById('dropOverlay').classList.remove('show'); document.getElementById('chatTa').classList.remove('drag'); Array.from(e.dataTransfer.files).forEach(readFile); });
+
+// ═══════════════════════
+// WEB SEARCH TOGGLE
+// ═══════════════════════
+function toggleWeb() {
+  webOn = !webOn;
+  const btn = document.getElementById('webBtn');
+  btn.classList.toggle('web-on', webOn);
+  btn.title = webOn ? 'Web search ON — AI will search the web' : 'Web search OFF';
+}
+
+async function searchWeb(query) {
+  try {
+    const r = await fetch(`${API}/api/search?q=${encodeURIComponent(query)}`);
+    const data = await r.json();
+    return data.results || [];
+  } catch { return []; }
+}
+
+// ═══════════════════════
+// CHAT SEND
+// ═══════════════════════
+function appendMsg(role, content, animate=true, files=[], webResults=[]) {
+  const el = document.getElementById('chatMsgs');
+  document.getElementById('chatEmpty').style.display = 'none';
+
+  // Web results bubble
+  if (webResults && webResults.length > 0) {
+    const wr = document.createElement('div');
+    wr.className = 'search-badge-wrap';
+    wr.innerHTML = `<div class="web-results">
+      <div class="web-results-header">🌐 Web results for: "${webResults[0]?.query||''}"</div>
+      ${webResults.slice(0,3).map(r=>`<div class="web-result-item">
+        <div class="web-result-title">${r.title}</div>
+        <div class="web-result-snippet">${r.snippet}</div>
+        <div class="web-result-url">${r.url}</div>
+      </div>`).join('')}
+    </div>`;
+    el.appendChild(wr);
+  }
+
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  if (!animate) div.style.animation = 'none';
+
+  let filesHtml = '';
+  if (files && files.length) {
+    filesHtml = '<div class="msg-files">' + files.map(f => {
+      if (f.dataUrl && f.type && f.type.startsWith('image/'))
+        return `<div class="msg-img" onclick="openLightbox('${f.dataUrl}')"><img src="${f.dataUrl}"/></div>`;
+      return `<div class="msg-doc">📄 ${f.name}</div>`;
+    }).join('') + '</div>';
+  }
+
+  const formatted = formatMsgContent(content);
+  div.innerHTML = `<div class="msg-av">${role==='ai'?'AI':'S'}</div><div class="msg-bubble">${filesHtml}${formatted}</div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function formatMsgContent(text) {
+  // Basic markdown-like formatting
+  return text
+    .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br/>');
+}
+
+function showThinking() {
+  const el = document.getElementById('chatMsgs');
+  const d = document.createElement('div');
+  d.className='msg ai'; d.id='thinking';
+  d.innerHTML=`<div class="msg-av">AI</div><div class="msg-bubble"><div class="thinking"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>`;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+function hideThinking() { document.getElementById('thinking')?.remove(); }
+
+async function sendChat() {
+  const ta = document.getElementById('chatTa');
+  const text = ta.value.trim();
+  const files = [...attachedFiles];
+  if (!text && !files.length) return;
+  if (!curSession) newChat();
+
+  attachedFiles = []; renderAttach();
+  ta.value = ''; taResize(ta);
+  document.getElementById('sendBtn').disabled = true;
+
+  let webResults = [];
+  let fileContext = '';
+  files.forEach(f => { if(f.text) fileContext += `\n\n[Attached file: ${f.name}]\n\`\`\`\n${f.text.slice(0,8000)}\n\`\`\``; });
+
+  // Web search if enabled
+  if (webOn && text) {
+    webResults = await searchWeb(text);
+    if (webResults.length) {
+      fileContext += '\n\n[Web Search Results]\n' + webResults.map(r=>`Title: ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`).join('\n\n');
+    }
+  }
+
+  const fullContent = (text + fileContext).trim();
+  const display = text || `📎 ${files.map(f=>f.name).join(', ')}`;
+
+  curSession.messages.push({role:'user', content:fullContent, files, webResults});
+  if (curSession.title === 'New Chat') curSession.title = display.slice(0,30)+(display.length>30?'...':'');
+  appendMsg('user', display, true, files, webResults.length ? [{query:text},...webResults] : []);
+  renderHist();
+  showThinking();
+
+  const model = document.getElementById('modelSelect').value;
+  const msgs = curSession.messages.slice(0,-1).map(m=>({role:m.role==='ai'?'assistant':'user', content:m.content}));
+  msgs.push({role:'user', content:fullContent});
+
+  try {
+    const r = await fetch(`${OLLAMA}/api/chat`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model, messages:msgs, stream:false})
+    });
+    const data = await r.json();
+    const reply = data.message?.content || 'No response.';
+    hideThinking();
+    curSession.messages.push({role:'ai', content:reply});
+    appendMsg('ai', reply);
+  } catch {
+    hideThinking();
+    appendMsg('ai', '⚠️ Cannot reach Ollama. Open CMD and run: `ollama serve`');
+  }
+  document.getElementById('sendBtn').disabled = false;
+  renderHist();
+}
+
+function chatKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
+function taResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+
+// Check ollama models
+async function loadModels() {
+  try {
+    const r = await fetch(`${OLLAMA}/api/tags`,{signal:AbortSignal.timeout(3000)});
+    const d = await r.json();
+    if(d.models?.length){
+      const sel=document.getElementById('modelSelect');
+      sel.innerHTML=d.models.map(m=>`<option value="${m.name}">${m.name}</option>`).join('');
+    }
+  } catch{}
+}
+loadModels();
+
+// ═══════════════════════
+// SCREENSHOTS
+// ═══════════════════════
+async function pickSSFolder() {
+  if (window.sethOS) {
+    const p = await window.sethOS.selectFolder();
+    if (p) { document.getElementById('ssPath').value = p; loadScreenshots(); }
+  }
+}
+
+async function loadScreenshots() {
+  const path = document.getElementById('ssPath').value.trim();
+  const container = document.getElementById('ssFolders');
+  container.innerHTML = '<div style="color:var(--text3);font-size:12px;">Loading...</div>';
+  try {
+    const r = await fetch(`${API}/api/screenshots${path?'?path='+encodeURIComponent(path):''}`);
+    const data = await r.json();
+    if (!data.folders?.length) {
+      container.innerHTML = '<div style="color:var(--text3);font-size:12px;">No screenshots found in this folder.</div>';
+      return;
+    }
+    container.innerHTML = data.folders.map(folder => `
+      <div class="ss-folder">
+        <div class="ss-folder-hdr" onclick="toggleSSFolder(this)">
+          <span>📅</span>
+          <span class="ss-folder-date">${folder.date}</span>
+          <span class="ss-folder-count">${folder.files.length} file${folder.files.length!==1?'s':''}</span>
+        </div>
+        <div class="ss-grid" style="display:none;">
+          ${folder.files.map(f => `
+            <div class="ss-thumb" onclick="openLightbox('${API}/api/screenshots/image?path=${encodeURIComponent(f.path)}')">
+              <img src="${API}/api/screenshots/image?path=${encodeURIComponent(f.path)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'ss-thumb-ph\\'>🖼️<br><small>${f.name}</small></div>'"/>
+              <div class="ss-thumb-info">${f.time} · ${f.size}</div>
+              <button class="ss-thumb-del" onclick="event.stopPropagation();deleteScreenshot('${f.path}')">🗑</button>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  } catch {
+    container.innerHTML = '<div style="color:var(--danger);font-size:12px;">⚠️ Server not running. Start sethOS_server.py first.</div>';
+  }
+}
+
+function toggleSSFolder(hdr) {
+  const grid = hdr.nextElementSibling;
+  grid.style.display = grid.style.display === 'none' ? 'grid' : 'none';
+}
+
+async function deleteScreenshot(path) {
+  if (!confirm('Delete this screenshot?')) return;
+  await fetch(`${API}/api/screenshots/delete`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path})});
+  loadScreenshots();
+}
+
+// ═══════════════════════
+// FILE SYSTEM
+// ═══════════════════════
+let currentFSPath = null;
+
+async function loadDiskUsage() {
+  try {
+    const r = await fetch(`${API}/api/disk-usage`);
+    const data = await r.json();
+    const el = document.getElementById('fsDrives');
+    el.innerHTML = data.drives.map(d => `
+      <div class="drive-chip" onclick="navTo('${d.name}')">
+        <div>${d.name}</div>
+        <div style="font-size:9px;color:var(--text3);">${formatBytes(d.used)} / ${formatBytes(d.total)}</div>
+        <div class="dc-bar" style="background:linear-gradient(90deg,${d.percent>85?'var(--danger)':d.percent>60?'var(--warn)':'var(--accent3)'} ${d.percent}%,var(--s3) 0%);"></div>
+      </div>`).join('');
+  } catch {}
+}
+
+async function loadFS(path) {
+  const home = path || (await getHomePath());
+  currentFSPath = home;
+  document.getElementById('fsPathBar').value = home;
+  try {
+    const r = await fetch(`${API}/api/filesystem?path=${encodeURIComponent(home)}`);
+    const data = await r.json();
+    renderFSTable(data.items, data.path, data.parent);
+  } catch {
+    document.getElementById('fsTbody').innerHTML = '<tr><td colspan="4" style="color:var(--danger);padding:20px;text-align:center;">⚠️ Server not running</td></tr>';
+  }
+}
+
+async function getHomePath() {
+  try { const r = await fetch(`${API}/api/health`); return r.ok ? (navigator.platform.startsWith('Win') ? 'C:\\Users' : '/home') : '/'; }
+  catch { return '/'; }
+}
+
+function renderFSTable(items, path, parent) {
+  // Breadcrumb
+  const parts = path.replace(/\\/g,'/').split('/').filter(Boolean);
+  const bc = document.getElementById('fsBreadcrumb');
+  bc.innerHTML = (parent ? `<span class="bc-item" onclick="navTo('${parent}')">⬆ Up</span><span class="bc-sep">/</span>` : '') +
+    parts.map((p,i) => {
+      const fullPath = parts.slice(0,i+1).join('/');
+      return `<span class="bc-item" onclick="navTo('${fullPath||'/'}')">${p}</span>`;
+    }).join('<span class="bc-sep"> / </span>');
+
+  const tbody = document.getElementById('fsTbody');
+  if (!items?.length) { tbody.innerHTML='<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:20px;">Empty folder</td></tr>'; return; }
+
+  const extIcons = {
+    '.py':'🐍','.ino':'🔧','.js':'📜','.jsx':'⚛️','.ts':'💙','.tsx':'⚛️',
+    '.json':'📋','.md':'📝','.html':'🌐','.css':'🎨','.sql':'🗄️',
+    '.txt':'📄','.pdf':'📕','.png':'🖼️','.jpg':'🖼️','.jpeg':'🖼️',
+    '.mp4':'🎬','.mp3':'🎵','.zip':'📦','.exe':'⚙️','.bat':'⚙️',
+  };
+
+  tbody.innerHTML = items.map(item => {
+    const icon = item.type==='dir' ? '📁' : (extIcons[item.ext]||'📄');
+    return `<tr>
+      <td><div class="fs-item-name" onclick="${item.type==='dir'?`navTo('${item.path.replace(/\\/g,'\\\\')}')`:`previewFSFile('${item.path.replace(/\\/g,'\\\\')}')`}">
+        ${icon} ${item.name}
+      </div></td>
+      <td class="fs-size">${item.type==='dir'?'—':item.size_str}</td>
+      <td class="fs-date">${item.modified}</td>
+      <td style="font-size:10px;color:var(--text3);">${item.type==='dir'?'Folder':item.ext||'File'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function navTo(path) {
+  currentFSPath = path;
+  document.getElementById('fsPathBar').value = path;
+  loadFS(path);
+}
+
+async function pickFSFolder() {
+  if (window.sethOS) { const p = await window.sethOS.selectFolder(); if(p) navTo(p); }
+}
+
+async function previewFSFile(path) {
+  try {
+    const r = await fetch(`${API}/api/file?path=${encodeURIComponent(path)}`);
+    const data = await r.json();
+    if (data.content !== undefined) {
+      const w = window.open('','_blank');
+      w.document.write(`<pre style="background:#0d1017;color:#e2e8f4;padding:20px;font-family:monospace;font-size:12px;">${data.content.replace(/</g,'&lt;')}</pre>`);
+    }
+  } catch {}
+}
+
+function formatBytes(b) {
+  if(b<1024)return b+'B'; if(b<1048576)return(b/1024).toFixed(1)+'KB';
+  if(b<1073741824)return(b/1048576).toFixed(1)+'MB'; return(b/1073741824).toFixed(1)+'GB';
+}
+
+// ═══════════════════════
+// APP MANAGER
+// ═══════════════════════
+let allApps = [], allGames = [], currentAppTab = 'apps';
+
+async function loadApps() {
+  if (allApps.length) return; // already loaded
+  try {
+    const r = await fetch(`${API}/api/apps`);
+    const data = await r.json();
+    allApps = data.apps || [];
+    allGames = data.games || [];
+    document.getElementById('appCountTag').textContent = `${data.total} installed`;
+    document.getElementById('appLoading').style.display = 'none';
+    renderAppGrid();
+  } catch {
+    document.getElementById('appLoading').innerHTML = '<div style="color:var(--danger);">⚠️ Server not running</div>';
+  }
+}
+
+const appIcons = {'chrome':'🌐','firefox':'🦊','vscode':'💻','steam':'🎮','discord':'💬','spotify':'🎵',
+  'office':'📊','word':'📝','excel':'📊','powerpoint':'📊','notepad':'📝','calculator':'🔢',
+  'python':'🐍','node':'📦','git':'🔧','vlc':'🎬','zoom':'📹','teams':'💼','slack':'💼',
+  'minecraft':'⛏️','roblox':'🎮','valorant':'🎮','fortnite':'🎮','default_app':'📦','default_game':'🎮'};
+
+function getAppIcon(name) {
+  const lower = name.toLowerCase();
+  for (const [key, icon] of Object.entries(appIcons)) { if (lower.includes(key)) return icon; }
+  return appIcons.default_app;
+}
+
+function renderAppGrid() {
+  const query = document.getElementById('appSearch').value.toLowerCase();
+  const apps = currentAppTab === 'apps' ? allApps : allGames;
+  const filtered = query ? apps.filter(a => a.name.toLowerCase().includes(query) || a.publisher?.toLowerCase().includes(query)) : apps;
+
+  const gridId = currentAppTab === 'apps' ? 'appGrid' : 'gameGrid';
+  document.getElementById('appGrid').style.display = currentAppTab==='apps'?'grid':'none';
+  document.getElementById('gameGrid').style.display = currentAppTab==='games'?'grid':'none';
+
+  const el = document.getElementById(gridId);
+  if (!filtered.length) { el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:10px;">No apps found.</div>'; return; }
+  el.innerHTML = filtered.map(a => `
+    <div class="app-card" title="${a.version?'v'+a.version:''}">
+      <div class="app-icon">${currentAppTab==='games'?appIcons.default_game:getAppIcon(a.name)}</div>
+      <div class="app-info">
+        <div class="app-name">${a.name}</div>
+        <div class="app-pub">${a.publisher||'Unknown'}</div>
+        ${a.version?`<div class="app-version">v${a.version}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function showAppTab(tab, el) {
+  currentAppTab = tab;
+  document.querySelectorAll('.app-tab-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderAppGrid();
+}
+
+function filterApps() { renderAppGrid(); }
+
+// ═══════════════════════
+// DOCUMENT EDITOR
+// ═══════════════════════
+let docSaveTimer = null;
+
+function execCmd(cmd) { document.getElementById('docEditor').focus(); document.execCommand(cmd, false, null); updateDocStatus(); }
+function execCmdVal(cmd, val) { document.getElementById('docEditor').focus(); document.execCommand(cmd, false, val); updateDocStatus(); }
+function sizeToFontTag(px) { return Math.max(1, Math.min(7, Math.round(px/4))); }
+
+function updateDocStatus() {
+  const ed = document.getElementById('docEditor');
+  const text = ed.innerText || '';
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  document.getElementById('docWordCount').textContent = words + ' words';
+  document.getElementById('docCharCount').textContent = text.length + ' chars';
+  document.getElementById('docSaved').textContent = '● Unsaved';
+  clearTimeout(docSaveTimer);
+  docSaveTimer = setTimeout(autoSaveDoc, 2000);
+}
+
+function autoSaveDoc() {
+  const content = document.getElementById('docEditor').innerHTML;
+  const title = document.getElementById('docTitle').value;
+  try { localStorage.setItem('sethos_doc', JSON.stringify({content, title, saved: new Date().toISOString()})); }
+  catch {}
+  document.getElementById('docSaved').textContent = '✓ Saved locally';
+}
+
+function docNew() {
+  if (!confirm('Start a new document? Current doc will be saved.')) return;
+  autoSaveDoc();
+  document.getElementById('docEditor').innerHTML = '';
+  document.getElementById('docTitle').value = '';
+  updateDocStatus();
+}
+
+function docExport(type) {
+  const title = document.getElementById('docTitle').value || 'document';
+  const content = document.getElementById('docEditor').innerHTML;
+  let blob, ext;
+  if (type === 'html') {
+    blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title><style>body{font-family:Outfit,sans-serif;max-width:760px;margin:40px auto;padding:20px;line-height:1.8;color:#1a1a2e;}pre{background:#f5f5f5;padding:12px;border-radius:6px;}</style></head><body><h1>${title}</h1>${content}</body></html>`], {type:'text/html'});
+    ext = 'html';
+  } else {
+    blob = new Blob([document.getElementById('docEditor').innerText], {type:'text/plain'});
+    ext = 'txt';
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = title.replace(/\s+/g,'-') + '.' + ext; a.click();
+}
+
+function docPrint() {
+  const title = document.getElementById('docTitle').value || 'Document';
+  const content = document.getElementById('docEditor').innerHTML;
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>body{font-family:Georgia,serif;max-width:760px;margin:40px auto;line-height:1.8;}@media print{body{margin:0;}}</style></head><body><h1>${title}</h1>${content}</body></html>`);
+  w.document.close(); w.print();
+}
+
+function insertTable() {
+  const rows = prompt('Rows:', '3'); const cols = prompt('Cols:', '3');
+  if (!rows || !cols) return;
+  let tbl = '<table><thead><tr>' + Array(+cols).fill('<th>Header</th>').join('') + '</tr></thead><tbody>';
+  for (let i=0;i<+rows;i++) tbl += '<tr>' + Array(+cols).fill('<td>Cell</td>').join('') + '</tr>';
+  tbl += '</tbody></table>';
+  execCmdVal('insertHTML', tbl);
+}
+
+function insertLink() {
+  const url = prompt('URL:'); const text = prompt('Link text:', url);
+  if (url) execCmdVal('insertHTML', `<a href="${url}">${text||url}</a>`);
+}
+
+function insertHR() { execCmdVal('insertHTML', '<hr style="border:none;border-top:1px solid #333;margin:16px 0;"/>'); }
+
+function toggleFind() {
+  const bar = document.getElementById('findBar');
+  bar.classList.toggle('show');
+  if (bar.classList.contains('show')) document.getElementById('findInput').focus();
+}
+
+function doFind() {
+  const term = document.getElementById('findInput').value;
+  if (!term) return;
+  window.find(term);
+}
+
+function doReplace() {
+  const find = document.getElementById('findInput').value;
+  const rep = document.getElementById('replaceInput').value;
+  const ed = document.getElementById('docEditor');
+  const html = ed.innerHTML;
+  if (find) { ed.innerHTML = html.replace(new RegExp(find,'i'), rep); updateDocStatus(); }
+}
+
+function doReplaceAll() {
+  const find = document.getElementById('findInput').value;
+  const rep = document.getElementById('replaceInput').value;
+  const ed = document.getElementById('docEditor');
+  if (find) { ed.innerHTML = ed.innerHTML.replace(new RegExp(find,'gi'), rep); updateDocStatus(); }
+}
+
+function docKeyDown(e) {
+  if (e.key === 'Tab') { e.preventDefault(); execCmdVal('insertHTML', '&nbsp;&nbsp;&nbsp;&nbsp;'); }
+}
+
+// Load saved doc
+try {
+  const saved = JSON.parse(localStorage.getItem('sethos_doc') || 'null');
+  if (saved) {
+    document.getElementById('docEditor').innerHTML = saved.content || '';
+    document.getElementById('docTitle').value = saved.title || '';
+    document.getElementById('docSaved').textContent = `✓ Saved ${new Date(saved.saved).toLocaleDateString()}`;
+    updateDocStatus();
+  }
+} catch {}
+
+// ═══════════════════════
+// EMAIL
+// ═══════════════════════
+async function connectEmail() {
+  try { const r = await fetch(`${API}/api/email/auth`); const d = await r.json(); if(d.status==='authorized') loadEmails(); else alert(d.error||'Setup credentials.json first'); }
+  catch { alert('Start sethOS_server.py first!'); }
+}
+
+async function loadEmails() {
+  try {
+    const r = await fetch(`${API}/api/email/inbox`); const data = await r.json();
+    if (data.emails) {
+      document.getElementById('emailSetup').style.display = 'none';
+      document.getElementById('emailApp').style.display = 'flex';
+      document.getElementById('emailTag').className = 'tag green'; document.getElementById('emailTag').textContent = 'Connected';
+      window._emails = data.emails;
+      const list = document.getElementById('emailList');
+      list.innerHTML = data.emails.map((e,i) => `
+        <div class="email-item ${e.unread?'unread':''}" onclick="showEmail(${i},this)">
+          <div class="email-from">${e.from.split('<')[0].trim()}</div>
+          <div class="email-subj">${e.subject}</div>
+          <div class="email-time">${e.date}</div>
+        </div>`).join('');
+    } else { alert(data.error||'Could not load emails'); }
+  } catch { alert('Server not running'); }
+}
+
+function showEmail(idx, el) {
+  document.querySelectorAll('.email-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  const email = window._emails[idx];
+  document.getElementById('emailPreview').innerHTML = `
+    <div class="email-view-subj">${email.subject}</div>
+    <div class="email-view-meta">From: ${email.from}<br>Date: ${email.date}</div>
+    <div class="email-view-body">${email.body.replace(/\n/g,'<br/>')}</div>`;
+}
+
+// ═══════════════════════
+// CODE PROJECTS
+// ═══════════════════════
+const CODE_PROJECTS = {
+  linefollower: {name:'Line Follower', files:{'line_follower.ino':`#include <QTRSensors.h>\n#define KP 0.4\n#define KD 1.8\n\nQTRSensors qtr;\nunsigned int sensorValues[6];\nint lastError = 0;\n\nvoid setup() {\n  qtr.setTypeRC();\n  qtr.setSensorPins((const uint8_t[]){2,3,4,5,6,7}, 6);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int position = qtr.readLineBlack(sensorValues);\n  int error = position - 2500;\n  int motorSpeed = KP * error + KD * (error - lastError);\n  lastError = error;\n  // drive motors based on motorSpeed\n}`,'motors.h':`#pragma once\nvoid setMotors(int left, int right);\nvoid stopMotors();`}},
+  arm: {name:'Robotic Arm', files:{'arm_controller.ino':`#include <Servo.h>\nServo base, shoulder, elbow, wrist, grip;\n\nvoid setup() {\n  base.attach(3); shoulder.attach(5);\n  elbow.attach(6); wrist.attach(9); grip.attach(10);\n  Serial.begin(9600);\n  homePosition();\n}\n\nvoid homePosition() {\n  base.write(90); shoulder.write(90);\n  elbow.write(90); wrist.write(90); grip.write(0);\n}\n\nvoid loop() {\n  if (Serial.available()) {\n    String cmd = Serial.readStringUntil('\\n');\n    // parse and execute command\n  }\n}`}},
+  mlclassifier: {name:'ML Classifier', files:{'train.py':`import tensorflow as tf\nfrom tensorflow.keras import layers, models\n\n(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()\nx_train, x_test = x_train / 255.0, x_test / 255.0\n\nmodel = models.Sequential([\n    layers.Conv2D(32, (3,3), activation='relu', input_shape=(32,32,3)),\n    layers.MaxPooling2D((2,2)),\n    layers.Conv2D(64, (3,3), activation='relu'),\n    layers.MaxPooling2D((2,2)),\n    layers.Flatten(),\n    layers.Dense(64, activation='relu'),\n    layers.Dense(10)\n])\n\nmodel.compile(optimizer='adam',\n  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),\n  metrics=['accuracy'])\n\nmodel.fit(x_train, y_train, epochs=10, validation_data=(x_test, y_test))`,'predict.py':`import numpy as np\nfrom train import model\n\ndef predict_image(img_array):\n    img = img_array.reshape(1,32,32,3) / 255.0\n    return np.argmax(model.predict(img))`}},
+  sqldash: {name:'SQL Dashboard', files:{'app.py':`from flask import Flask, jsonify\nimport sqlite3\n\napp = Flask(__name__)\nDB = 'data.db'\n\ndef query(sql):\n    con = sqlite3.connect(DB)\n    rows = con.cursor().execute(sql).fetchall()\n    con.close()\n    return rows\n\n@app.route('/api/stats')\ndef stats():\n    total = query("SELECT COUNT(*) FROM records")[0][0]\n    return jsonify({"total": total})\n\nif __name__ == '__main__':\n    app.run(debug=True)`}}
+};
+
+function openCodeProject(id) {
+  const proj = CODE_PROJECTS[id]; if(!proj) return;
+  const wrap = document.getElementById('codeEditorWrap');
+  const tabbar = document.getElementById('codeTabbar');
+  const body = document.getElementById('codeBody');
+  wrap.style.display = 'block';
+  const files = Object.keys(proj.files);
+  tabbar.innerHTML = files.map((f,i)=>`<div class="code-etab ${i===0?'active':''}" onclick="switchCodeTab(this,'${id}','${f}')">${f}</div>`).join('');
+  body.textContent = proj.files[files[0]];
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function switchCodeTab(el, pid, fname) {
+  document.querySelectorAll('.code-etab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('codeBody').textContent = CODE_PROJECTS[pid].files[fname];
+}
+
+// ═══════════════════════
+// ADD CUSTOM TABS
+// ═══════════════════════
+let selIcon = '🔧', customN = 0;
+
+function openModal() { document.getElementById('addModal').classList.add('show'); document.getElementById('newTabName').focus(); }
+function closeModal() { document.getElementById('addModal').classList.remove('show'); }
+function pickIcon(el, icon) { document.querySelectorAll('.icon-opt').forEach(o=>o.classList.remove('sel')); el.classList.add('sel'); selIcon = icon; }
+
+function addCustomTab() {
+  const name = document.getElementById('newTabName').value.trim();
+  const desc = document.getElementById('newTabDesc').value.trim();
+  if (!name) return;
+  customN++;
+  const id = 'custom-' + customN;
+
+  const navItem = document.createElement('div');
+  navItem.className = 'auto-nav-item';
+  navItem.innerHTML = `<span class="ni">${selIcon}</span>${name}`;
+  navItem.onclick = () => switchPanel(id, navItem);
+  document.getElementById('autoNav').appendChild(navItem);
+
+  const panel = document.createElement('div');
+  panel.className = 'auto-panel'; panel.id = 'panel-' + id;
+  panel.innerHTML = `
+    <div class="panel-hdr"><span class="ph-icon">${selIcon}</span><h2>${name}</h2></div>
+    <div class="panel-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+      <div class="custom-placeholder">
+        <div class="cp-icon">${selIcon}</div>
+        <h3>${name}</h3>
+        <p>${desc||'Your custom automation panel. Connect it to the Python server to add real functionality.'}</p>
+        <div class="setup-box" style="margin-top:12px;max-width:340px;">
+          <span>🔧</span><div>Add a route in <code>sethOS_server.py</code>:<br/><code>@app.route('/api/${id}')</code></div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('customPanels').appendChild(panel);
+  closeModal();
+  switchPanel(id, navItem);
+}
+
+document.getElementById('addModal').addEventListener('click', e => { if(e.target===document.getElementById('addModal')) closeModal(); });
+
+// ═══════════════════════
+// LIGHTBOX
+// ═══════════════════════
+function openLightbox(src) { document.getElementById('lbImg').src=src; document.getElementById('lightbox').classList.add('show'); }
+function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); document.getElementById('lbImg').src=''; }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeLightbox(); if(e.key==='Escape') toggleFind(); });
+
+// ═══════════════════════
+// ELECTRON INTEGRATION
+// ═══════════════════════
+(function() {
+  const api = window.sethOS;
+  if (!api) return;
+  api.onServerReady(() => { document.getElementById('serverDot').classList.add('on'); document.getElementById('serverLabel').textContent='server online'; });
+  api.onServerError(msg => { document.getElementById('serverLabel').textContent='server error'; });
+  const rb = document.querySelector('.tb-btn');
+  if(rb) rb.onclick = async () => { await api.restartServer(); setTimeout(checkServer, 3000); };
+  // Email notification polling
+  let lastUnread = 0;
+  setInterval(async () => {
+    try {
+      const r = await fetch(`${API}/api/email/inbox`);
+      const d = await r.json();
+      if (d.emails) {
+        const unread = d.emails.filter(e=>e.unread).length;
+        if (unread > lastUnread && lastUnread > 0) api.notify('SethOS', `${unread} unread emails`);
+        lastUnread = unread;
+      }
+    } catch {}
+  }, 120000);
+})();
+
+// Init
+newChat();
+</script>
+</body>
+</html>

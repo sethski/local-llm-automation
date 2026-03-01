@@ -1,0 +1,68 @@
+{
+  "name": "sethos",
+  "version": "1.0.0",
+  "description": "SethOS — Personal AI Dashboard",
+  "main": "electron/main.js",
+  "author": "Seth Bernard Planco",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.0"
+  },
+  "devDependencies": {
+    "electron": "^40.6.1",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.seth.sethos",
+    "productName": "SethOS",
+    "copyright": "Seth Bernard Planco",
+    "icon": "assets/icon",
+    "files": [
+      "electron/**/*",
+      "index.html",
+      "sethOS_server.py",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "sethOS_server.py",
+        "to": "sethOS_server.py"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png",
+      "category": "Utility"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
